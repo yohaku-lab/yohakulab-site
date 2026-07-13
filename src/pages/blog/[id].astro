@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { id: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<Base title={post.data.title} description={post.data.description} ogType="article">
+  <article class="prose">
+    <h1>{post.data.title}</h1>
+    <p class="article-meta">
+      <time datetime={post.data.pubDate.toISOString()}>{fmt(post.data.pubDate)}</time> 公開
+      {
+        post.data.updatedDate && (
+          <>
+            ／ <time datetime={post.data.updatedDate.toISOString()}>{fmt(post.data.updatedDate)}</time> 更新
+          </>
+        )
+      }
+    </p>
+    <Content />
+  </article>
+  <p style="margin-top: 3rem;"><a href="/blog/">← 記事一覧へ</a></p>
+</Base>

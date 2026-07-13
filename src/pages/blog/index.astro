@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<Base
+  title="ブログ"
+  description="FIRE・資産形成・家計にまつわる検証記事の一覧。シミュレーションを使って自分の数字で確かめることをテーマにしています。"
+>
+  <h1>ブログ</h1>
+  <ul class="post-list">
+    {
+      posts.map((post) => (
+        <li>
+          <a class="card" href={`/blog/${post.id}/`}>
+            <time datetime={post.data.pubDate.toISOString()}>{fmt(post.data.pubDate)}</time>
+            <h3>{post.data.title}</h3>
+            <p>{post.data.description}</p>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Base>
