@@ -1,0 +1,176 @@
+---
+/**
+ * 横棒グラフ（大小の比較用）。記事にMDXから埋め込む。
+ * ビルド時に静的HTML/CSSとして出力される（JSなし・軽量・印刷/スクリーンリーダー対応）。
+ *
+ * bars: { label, value, display?, variant?, note? }[]
+ *   value   … 棒の長さの元になる数値
+ *   display … 棒の脇に出す表示文字（省略時は value + unit）
+ *   variant … 'primary'（既定・ティール）/ 'highlight'（アンバー・強調）/ 'muted'（グレー）
+ *   note    … ラベル下の小さな補足
+ * max      … 軸の最大値（省略時は bars の最大値）
+ * unit     … display 省略時に value に付ける単位（例 '%'）
+ * reference… { value, label } を渡すと各棒に基準の縦破線を引く
+ */
+interface Bar {
+  label: string;
+  value: number;
+  display?: string;
+  variant?: 'primary' | 'highlight' | 'muted';
+  note?: string;
+}
+interface Props {
+  title?: string;
+  caption?: string;
+  bars: Bar[];
+  max?: number;
+  unit?: string;
+  reference?: { value: number; label: string };
+}
+
+const { title, caption, bars, max, unit = '', reference } = Astro.props;
+const axisMax = max ?? Math.max(...bars.map((b) => b.value));
+const pctOf = (v: number) => `${Math.max(0, Math.min(100, (v / axisMax) * 100))}%`;
+---
+
+<figure class="chart">
+  {title && <figcaption class="chart-title">{title}</figcaption>}
+  <div class="chart-body">
+    {
+      bars.map((b) => (
+        <div class="bc-row">
+          <div class="bc-head">
+            <span class="bc-label">
+              {b.label}
+              {b.note && <span class="bc-note">{b.note}</span>}
+            </span>
+            <span class={`bc-value v-${b.variant ?? 'primary'}`}>
+              {b.display ?? `${b.value}${unit}`}
+            </span>
+          </div>
+          <div class="bc-track">
+            <div class={`bc-fill f-${b.variant ?? 'primary'}`} style={`width:${pctOf(b.value)}`} />
+            {reference && (
+              <span class="bc-ref" style={`left:${pctOf(reference.value)}`} aria-hidden="true" />
+            )}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+  {
+    reference && (
+      <p class="chart-ref-label">
+        <span class="ref-swatch" aria-hidden="true" />
+        {reference.label}
+      </p>
+    )
+  }
+  {caption && <p class="chart-caption">{caption}</p>}
+</figure>
+
+<style>
+  .chart {
+    margin: 2rem 0;
+    padding: 1.4rem 1.5rem 1.5rem;
+    background: #fbfcfd;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .chart-title {
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 0.98rem;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+  }
+  .chart-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+  }
+  .bc-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .bc-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.8rem;
+    line-height: 1.4;
+  }
+  .bc-label {
+    font-size: 0.86rem;
+    color: var(--text);
+  }
+  .bc-note {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    margin-left: 0.4em;
+  }
+  .bc-value {
+    font-weight: 700;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .bc-value.v-primary {
+    color: var(--teal-dark);
+  }
+  .bc-value.v-highlight {
+    color: #c2740a;
+  }
+  .bc-value.v-muted {
+    color: var(--text-muted);
+  }
+  .bc-track {
+    position: relative;
+    height: 12px;
+    background: #eef2f6;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bc-fill {
+    height: 100%;
+    border-radius: 6px;
+    min-width: 3px;
+  }
+  .bc-fill.f-primary {
+    background: var(--teal-dark);
+  }
+  .bc-fill.f-highlight {
+    background: #f59e0b;
+  }
+  .bc-fill.f-muted {
+    background: #94a3b8;
+  }
+  /* 基準の縦破線。overflow:hidden の外に出すため track を基準に配置 */
+  .bc-track .bc-ref {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 0;
+    border-left: 2px dashed #64748b;
+  }
+  .chart-ref-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.9rem 0 0;
+  }
+  .ref-swatch {
+    display: inline-block;
+    width: 16px;
+    border-top: 2px dashed #64748b;
+  }
+  .chart-caption {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.9rem 0 0;
+    line-height: 1.6;
+  }
+</style>

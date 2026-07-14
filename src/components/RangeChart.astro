@@ -1,0 +1,184 @@
+---
+/**
+ * レンジ（幅）グラフ。各項目を「下限〜上限の帯＋中央値マーカー」で描く。
+ * 「到達時期は点ではなく幅」のような分布の見せ方に使う。ビルド時に静的HTML化。
+ *
+ * items: { label, lo, hi, mid, midLabel? }[]  値は axisMin〜axisMax の範囲の数値
+ * axisMin / axisMax … 横軸の範囲
+ * ticks … 軸目盛りの値の配列（例 [40,50,60,70]）
+ * unit  … 軸ラベル・マーカーラベルに付ける単位（例 '歳'）
+ */
+interface Item {
+  label: string;
+  lo: number;
+  hi: number;
+  mid: number;
+  midLabel?: string;
+}
+interface Props {
+  title?: string;
+  caption?: string;
+  items: Item[];
+  axisMin: number;
+  axisMax: number;
+  ticks?: number[];
+  unit?: string;
+}
+
+const { title, caption, items, axisMin, axisMax, ticks = [], unit = '' } = Astro.props;
+const span = axisMax - axisMin;
+const pos = (v: number) => `${((v - axisMin) / span) * 100}%`;
+---
+
+<figure class="chart">
+  {title && <figcaption class="chart-title">{title}</figcaption>}
+  <div class="rc-body">
+    {
+      items.map((it) => (
+        <div class="rc-row">
+          <div class="rc-label">{it.label}</div>
+          <div class="rc-track">
+            {ticks.map((t) => (
+              <span class="rc-grid" style={`left:${pos(t)}`} aria-hidden="true" />
+            ))}
+            <span
+              class="rc-band"
+              style={`left:${pos(it.lo)};width:${((it.hi - it.lo) / span) * 100}%`}
+            />
+            <span class="rc-mid" style={`left:${pos(it.mid)}`}>
+              <span class="rc-mid-label">{it.midLabel ?? `${it.mid}${unit}`}</span>
+            </span>
+          </div>
+        </div>
+      ))
+    }
+    {ticks.length > 0 && (
+      <div class="rc-axis">
+        {ticks.map((t) => (
+          <span class="rc-tick" style={`left:${pos(t)}`}>
+            {t}
+            {unit}
+          </span>
+        ))}
+      </div>
+    )}
+  </div>
+  <p class="rc-legend">
+    <span class="lg-band" aria-hidden="true" />上振れ〜慎重ラインの幅
+    <span class="lg-mid" aria-hidden="true" />中央値
+  </p>
+  {caption && <p class="chart-caption">{caption}</p>}
+</figure>
+
+<style>
+  .chart {
+    margin: 2rem 0;
+    padding: 1.4rem 1.5rem 1.5rem;
+    background: #fbfcfd;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .chart-title {
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 0.98rem;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+  }
+  .rc-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .rc-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .rc-label {
+    font-size: 0.86rem;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .rc-track {
+    position: relative;
+    height: 26px;
+  }
+  .rc-grid {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px solid #e8edf2;
+  }
+  .rc-band {
+    position: absolute;
+    top: 7px;
+    height: 12px;
+    background: rgba(15, 158, 140, 0.22);
+    border: 1px solid rgba(15, 158, 140, 0.4);
+    border-radius: 6px;
+  }
+  .rc-mid {
+    position: absolute;
+    top: 2px;
+    width: 0;
+    height: 22px;
+    border-left: 3px solid var(--teal-dark);
+    transform: translateX(-1.5px);
+  }
+  .rc-mid-label {
+    position: absolute;
+    top: -1.15rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--teal-dark);
+    white-space: nowrap;
+  }
+  .rc-axis {
+    position: relative;
+    height: 1rem;
+    margin-top: 0.2rem;
+    border-top: 1px solid var(--border);
+  }
+  .rc-tick {
+    position: absolute;
+    top: 0.25rem;
+    transform: translateX(-50%);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .rc-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin: 1rem 0 0;
+  }
+  .lg-band {
+    display: inline-block;
+    width: 22px;
+    height: 11px;
+    background: rgba(15, 158, 140, 0.22);
+    border: 1px solid rgba(15, 158, 140, 0.4);
+    border-radius: 3px;
+  }
+  .lg-mid {
+    display: inline-block;
+    width: 0;
+    height: 14px;
+    border-left: 3px solid var(--teal-dark);
+    margin-left: 0.6rem;
+  }
+  .chart-caption {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.9rem 0 0;
+    line-height: 1.6;
+  }
+</style>
