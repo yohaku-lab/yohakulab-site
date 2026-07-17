@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { ADSENSE_CLIENT } from '../consts';
 
 interface Props {
   title: string;
@@ -33,6 +34,15 @@ const fullTitle = Astro.url.pathname === '/' ? `${siteName}｜シンプルなア
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@yohakulab_app" />
     <meta name="generator" content={Astro.generator} />
+    {
+      ADSENSE_CLIENT && (
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossorigin="anonymous"
+        />
+      )
+    }
   </head>
   <body>
     <header class="site-header">
