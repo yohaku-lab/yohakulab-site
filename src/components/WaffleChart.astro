@@ -1,0 +1,184 @@
+---
+/**
+ * ワッフルチャート：「100人中◯人」のように確率・割合を升目で見せる。
+ * 抽象的な%を具体的な人数イメージに変換する用途。ビルド時に静的HTML化（JSなし）。
+ *
+ * items: {
+ *   label: string
+ *   headline: string        … 升目の脇に出す大きな数値（例 "53/100"）
+ *   segments: { count, variant: 'primary'|'highlight' }[]  … 塗りつぶす升目（先頭から順に積み上げ）
+ *   note?: string
+ * }[]
+ * total … 升目の総数（既定100）
+ * legend … [{ variant, label }] 凡例
+ */
+interface Segment {
+  count: number;
+  variant: 'primary' | 'highlight';
+}
+interface WaffleItem {
+  label: string;
+  headline: string;
+  segments: Segment[];
+  note?: string;
+}
+interface LegendEntry {
+  variant: 'primary' | 'highlight' | 'empty';
+  label: string;
+}
+interface Props {
+  title?: string;
+  caption?: string;
+  items: WaffleItem[];
+  total?: number;
+  legend?: LegendEntry[];
+}
+
+const { title, caption, items, total = 100, legend = [] } = Astro.props;
+
+const cellsFor = (item: WaffleItem) => {
+  const cells: ('primary' | 'highlight' | 'empty')[] = [];
+  for (const seg of item.segments) {
+    for (let i = 0; i < seg.count; i++) cells.push(seg.variant);
+  }
+  while (cells.length < total) cells.push('empty');
+  return cells.slice(0, total);
+};
+
+const describeFilled = (item: WaffleItem) => {
+  const filled = item.segments.reduce((s, seg) => s + seg.count, 0);
+  return `${total}通り中${filled}通り`;
+};
+---
+
+<figure class="chart waffle-chart">
+  {title && <figcaption class="chart-title">{title}</figcaption>}
+  <div class="waffle-row">
+    {
+      items.map((item) => (
+        <div class="waffle-item">
+          <p class="waffle-head">
+            {item.label}
+            <strong class="waffle-headline">{item.headline}</strong>
+          </p>
+          <div class="waffle-grid" role="img" aria-label={`${item.label}: ${describeFilled(item)}`}>
+            {cellsFor(item).map((v) => (
+              <span class={`cell c-${v}`} />
+            ))}
+          </div>
+          {item.note && <p class="waffle-note">{item.note}</p>}
+        </div>
+      ))
+    }
+  </div>
+  {legend.length > 0 && (
+    <p class="chart-legend">
+      {legend.map((l) => (
+        <span class="lg-item">
+          <span class={`lg-swatch lg-${l.variant}`} aria-hidden="true" />
+          {l.label}
+        </span>
+      ))}
+    </p>
+  )}
+  {caption && <p class="chart-caption">{caption}</p>}
+</figure>
+
+<style>
+  .chart {
+    margin: 2rem 0;
+    padding: 1.4rem 1.5rem 1.5rem;
+    background: #fbfcfd;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .chart-title {
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 0.98rem;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+  }
+  .waffle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.8rem;
+  }
+  .waffle-item {
+    flex: 1 1 220px;
+    min-width: 200px;
+  }
+  .waffle-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+    font-size: 0.86rem;
+    color: var(--text);
+    margin: 0 0 0.6rem;
+  }
+  .waffle-headline {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--teal-dark);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .waffle-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+  }
+  .cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+  }
+  .cell.c-primary {
+    background: var(--teal-dark);
+  }
+  .cell.c-highlight {
+    background: #f59e0b;
+  }
+  .cell.c-empty {
+    background: #eef2f6;
+  }
+  .waffle-note {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin: 0.6rem 0 0;
+  }
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.2rem;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin: 1.2rem 0 0;
+  }
+  .lg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .lg-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .lg-primary {
+    background: var(--teal-dark);
+  }
+  .lg-highlight {
+    background: #f59e0b;
+  }
+  .lg-empty {
+    background: #eef2f6;
+  }
+  .chart-caption {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.9rem 0 0;
+    line-height: 1.6;
+  }
+</style>
