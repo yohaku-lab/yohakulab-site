@@ -1,0 +1,226 @@
+---
+/**
+ * ファンチャート：年齢（横軸）ごとの資産パーセンタイル帯を描く。
+ * モンテカルロ結果の「バラつき」を視覚的に見せる。ビルド時に静的SVG化（JSなし）。
+ *
+ * data: [age, p10, p25, p50, p75, p90][]（金額は万円）
+ * annotations: 直接ラベル（少数に絞る。マークの近くに短い注記を置く用途）
+ *   { age, value, text, dx?, dy?, anchor?: 'start'|'middle'|'end', emphasis?: boolean }
+ */
+interface Annotation {
+  age: number;
+  value: number;
+  text: string;
+  dx?: number;
+  dy?: number;
+  anchor?: 'start' | 'middle' | 'end';
+  emphasis?: boolean;
+}
+interface Props {
+  title?: string;
+  caption?: string;
+  data: number[][];
+  yMax?: number;
+  yTicks?: number[];
+  xTicks?: number[];
+  annotations?: Annotation[];
+}
+
+const {
+  title,
+  caption,
+  data,
+  yMax,
+  yTicks = [0, 5000, 10000, 15000],
+  xTicks,
+  annotations = [],
+} = Astro.props;
+
+const ages = data.map((r) => r[0]);
+const minAge = Math.min(...ages);
+const maxAge = Math.max(...ages);
+const axisMax = yMax ?? Math.max(...data.map((r) => r[5]));
+const xt = xTicks ?? ages.filter((a) => a % 10 === 0);
+
+const W = 640, H = 360, ML = 58, MR = 14, MT = 14, MB = 30;
+const plotW = W - ML - MR, plotH = H - MT - MB;
+const px = (age: number) => ML + ((age - minAge) / (maxAge - minAge)) * plotW;
+const py = (v: number) => MT + plotH - (Math.min(v, axisMax) / axisMax) * plotH;
+
+const line = (idx: number) => data.map((r) => `${px(r[0]).toFixed(1)},${py(r[idx]).toFixed(1)}`).join(' ');
+const band = (hiIdx: number, loIdx: number) =>
+  [...data.map((r) => `${px(r[0]).toFixed(1)},${py(r[hiIdx]).toFixed(1)}`),
+   ...[...data].reverse().map((r) => `${px(r[0]).toFixed(1)},${py(r[loIdx]).toFixed(1)}`)].join(' ');
+
+const outerBand = band(5, 1);
+const innerBand = band(4, 2);
+const medianLine = line(3);
+
+const fmtYen = (v: number) => {
+  if (v <= 0) return '0';
+  if (v >= 10000) {
+    const oku = v / 10000;
+    return `${oku % 1 === 0 ? oku : oku.toFixed(1)}億円`;
+  }
+  return `${Math.round(v).toLocaleString('ja-JP')}万円`;
+};
+---
+
+<figure class="chart fan-chart">
+  {title && <figcaption class="chart-title">{title}</figcaption>}
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={title ?? '年齢ごとの資産パーセンタイル推移'}>
+    {yTicks.map((t) => (
+      <>
+        <line x1={ML} y1={py(t)} x2={W - MR} y2={py(t)} class="grid" />
+        <text x={ML - 8} y={py(t) + 4} class="tick" text-anchor="end">{fmtYen(t)}</text>
+      </>
+    ))}
+    {xt.map((t) => (
+      <text x={px(t)} y={H - 8} class="tick" text-anchor="middle">{t}歳</text>
+    ))}
+    <polygon points={outerBand} class="band-outer" />
+    <polygon points={innerBand} class="band-inner" />
+    <polyline points={medianLine} class="median" />
+    {annotations.map((a) => (
+      <text
+        x={px(a.age) + (a.dx ?? 0)}
+        y={py(a.value) + (a.dy ?? -8)}
+        text-anchor={a.anchor ?? 'middle'}
+        class={`note ${a.emphasis ? 'ink' : ''}`}
+      >
+        {a.text}
+      </text>
+    ))}
+  </svg>
+  <p class="chart-legend">
+    <span class="lg-item"><span class="lg-swatch lg-outer" aria-hidden="true"></span>10〜90パーセンタイル（中位80%のシナリオ）</span>
+    <span class="lg-item"><span class="lg-swatch lg-inner" aria-hidden="true"></span>25〜75パーセンタイル（中位50%）</span>
+    <span class="lg-item"><span class="lg-swatch lg-line" aria-hidden="true"></span>中央値</span>
+  </p>
+  {caption && <p class="chart-caption">{caption}</p>}
+  <details class="chart-table">
+    <summary>年齢ごとの数値を表で見る</summary>
+    <table>
+      <thead>
+        <tr><th>年齢</th><th>下位10%</th><th>下位25%</th><th>中央値</th><th>上位25%</th><th>上位10%</th></tr>
+      </thead>
+      <tbody>
+        {data.filter((r) => r[0] % 10 === 0).map((r) => (
+          <tr>
+            <td>{r[0]}歳</td>
+            <td>{fmtYen(r[1])}</td>
+            <td>{fmtYen(r[2])}</td>
+            <td>{fmtYen(r[3])}</td>
+            <td>{fmtYen(r[4])}</td>
+            <td>{fmtYen(r[5])}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </details>
+</figure>
+
+<style>
+  .chart {
+    margin: 2rem 0;
+    padding: 1.4rem 1.5rem 1.5rem;
+    background: #fbfcfd;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .chart-title {
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 0.98rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .grid {
+    stroke: #e6ebf1;
+    stroke-width: 1;
+  }
+  .tick {
+    font-size: 11px;
+    fill: var(--text-muted);
+  }
+  .note {
+    font-size: 11px;
+    fill: var(--text-muted);
+  }
+  .note.ink {
+    fill: var(--teal-dark);
+    font-weight: 700;
+  }
+  .band-outer {
+    fill: rgba(15, 158, 140, 0.13);
+  }
+  .band-inner {
+    fill: rgba(15, 158, 140, 0.30);
+  }
+  .median {
+    fill: none;
+    stroke: var(--teal-dark);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1rem;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin: 1rem 0 0;
+  }
+  .lg-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 0.3rem;
+    vertical-align: -1px;
+  }
+  .lg-outer {
+    background: rgba(15, 158, 140, 0.13);
+  }
+  .lg-inner {
+    background: rgba(15, 158, 140, 0.30);
+  }
+  .lg-line {
+    background: var(--teal-dark);
+    height: 3px;
+    width: 16px;
+  }
+  .lg-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+  }
+  .lg-item .lg-swatch {
+    align-self: center;
+  }
+  .chart-caption {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.9rem 0 0;
+    line-height: 1.6;
+  }
+  .chart-table {
+    margin-top: 0.9rem;
+    font-size: 0.82rem;
+  }
+  .chart-table summary {
+    cursor: pointer;
+    color: var(--teal-dark);
+    font-weight: 600;
+  }
+  .chart-table table {
+    margin: 0.8rem 0 0 !important;
+  }
+</style>
