@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { ADSENSE_CLIENT } from '../consts';
+import { ADSENSE_CLIENT, CF_ANALYTICS_TOKEN } from '../consts';
 
 interface Props {
   title: string;
@@ -40,6 +40,15 @@ const fullTitle = Astro.url.pathname === '/' ? `${siteName}｜シンプルなア
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
           crossorigin="anonymous"
+        />
+      )
+    }
+    {
+      CF_ANALYTICS_TOKEN && (
+        <script
+          type="module"
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}
         />
       )
     }
