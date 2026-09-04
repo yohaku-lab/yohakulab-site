@@ -1,0 +1,104 @@
+---
+/**
+ * アフィリエイト導線のリンク。記事にMDXから埋め込む。
+ *
+ * 生のアフィリURLは書かず、必ず src/affiliate.ts に slug で登録して呼び出す。
+ * 未提携（active: false）の間は何も描画しないので、提携申請中の記事にも
+ * 先に置いておける（承認後に affiliate.ts を直せば全記事で一斉に有効になる）。
+ *
+ * 使い方:
+ *   import AffiliateLink from '../../components/AffiliateLink.astro';
+ *   <AffiliateLink slug="satofull" text="さとふるで控除上限を確認する" />
+ *
+ * ステマ規制（景表法・2023年10月〜）対応として「PR」表記を必ず併記する。
+ * 記事の冒頭には AffiliateDisclosure も置くこと（scripts/check-affiliate.mjs が検査する）。
+ */
+import { AFFILIATE_LINKS, resolveAffiliateLink } from '../affiliate';
+
+interface Props {
+  /** src/affiliate.ts に登録した slug */
+  slug: string;
+  /** リンクの文言 */
+  text: string;
+  /** リンク下の補足（任意） */
+  note?: string;
+}
+
+const { slug, text, note } = Astro.props;
+
+// 登録漏れ・タイポはビルドを落として気づけるようにする（未提携は落とさない）
+if (!(slug in AFFILIATE_LINKS)) {
+  throw new Error(
+    `AffiliateLink: slug "${slug}" は src/affiliate.ts に登録されていません`
+  );
+}
+
+const link = resolveAffiliateLink(slug);
+---
+
+{
+  link && (
+    <p class="affiliate">
+      <a
+        class="affiliate-link"
+        href={`/go/${slug}`}
+        rel="sponsored nofollow noopener"
+        target="_blank"
+      >
+        {text}
+        <span class="affiliate-host">{link.label}</span>
+      </a>
+      <span class="affiliate-pr">PR</span>
+      {note && <span class="affiliate-note">{note}</span>}
+    </p>
+  )
+}
+
+<style>
+  .affiliate {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin: 2rem 0;
+    padding: 1rem 1.15rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal-dark);
+    border-radius: 6px;
+  }
+
+  .affiliate-link {
+    font-weight: 600;
+    color: var(--teal-dark);
+    text-decoration: none;
+  }
+
+  .affiliate-link:hover {
+    text-decoration: underline;
+  }
+
+  .affiliate-host {
+    margin-left: 0.4rem;
+    font-size: 0.85em;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  .affiliate-pr {
+    flex: none;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .affiliate-note {
+    flex-basis: 100%;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+</style>

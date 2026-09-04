@@ -5,6 +5,10 @@ pubDate: 2026-08-31
 ---
 
 import BarChart from '../../components/BarChart.astro';
+import AffiliateDisclosure from '../../components/AffiliateDisclosure.astro';
+import AffiliateLink from '../../components/AffiliateLink.astro';
+
+<AffiliateDisclosure slugs={['furusato-choice', 'dshopping-furusato']} />
 
 「ふるさと納税は実質2,000円でお得」——よく聞くフレーズですが、いくらまで寄付すれば本当に2,000円で済むのか、自分の年収だといくらなのかを正確に把握しないまま、私は長らく「なんとなくこのくらい」で寄付していました。
 
@@ -96,6 +100,12 @@ import BarChart from '../../components/BarChart.astro';
 - 限度額は年収と世帯構成（配偶者控除・扶養控除の有無）で決まる。年収が同じでも、扶養家族が増えるほど限度額は下がる。
 - 返礼割合は国のルールで寄付額の30%が上限。実質利益はそこから自己負担2,000円を引いた金額が理屈上の上限になる。
 - 正確な限度額は、確定申告シーズンが近づいたら公式シミュレーターで再確認するのが安全。
+
+<AffiliateLink
+  slug="furusato-choice"
+  text="ふるさとチョイスで控除上限額を調べる"
+  note="寄付先を選ぶ前に、上限額の目安を確認しておくと超過分の自己負担を避けられます。"
+/>
 
 自分の年収での手取り額や、社会保険料・税金の内訳を先に把握しておくと、ふるさと納税の限度額もイメージしやすくなります。よろしければ[シンプル手取り計算](https://tedori.yohakulab.app/)もあわせてどうぞ。登録不要・入力したデータはブラウザの中だけで処理されます。
 

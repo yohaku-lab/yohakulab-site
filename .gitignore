@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # Claude Code local tooling config
 .claude/
+
+# wrangler dev のローカル状態
+.wrangler/

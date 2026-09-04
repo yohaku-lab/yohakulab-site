@@ -1,8 +1,17 @@
 {
   "name": "yohakulab-site",
   "compatibility_date": "2026-07-01",
+  // `/go/*`（アフィリエイト導線）だけをこの Worker が処理する。
+  // それ以外のパスは従来どおり静的アセットが先に返るので、サイトの挙動は不変。
+  "main": "./worker/index.ts",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    "binding": "ASSETS",
+    "run_worker_first": ["/go/*"]
+  },
+  // クリック数を Workers Logs から集計するために必須
+  "observability": {
+    "enabled": true
   }
 }

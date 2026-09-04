@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+# アフィリエイトのリダイレクト用パス。クローラーに辿らせない
+Disallow: /go/
 
 Sitemap: https://yohakulab.app/sitemap-index.xml

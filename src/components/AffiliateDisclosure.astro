@@ -1,0 +1,38 @@
+---
+/**
+ * 記事冒頭に置く広告表記。ステマ規制（景表法・2023年10月〜）で、広告であることを
+ * 一般消費者が明瞭に認識できる形で示す必要があるため、AffiliateLink を含む記事には
+ * 必ずこれを置く（scripts/check-affiliate.mjs がビルド後に検査する）。
+ *
+ * 記事で使う slug を渡すと、そのどれかが有効なときだけ表示される。提携前は
+ * AffiliateLink 自体が描画されないので、表記だけが残って実態と食い違うのを防ぐ。
+ *
+ *   <AffiliateDisclosure slugs={['satofull']} />
+ */
+import { resolveAffiliateLink } from '../affiliate';
+
+interface Props {
+  /** この記事で使っている AffiliateLink の slug */
+  slugs: string[];
+}
+
+const { slugs } = Astro.props;
+const hasActiveLink = slugs.some((slug) => resolveAffiliateLink(slug) !== null);
+---
+
+{
+  hasActiveLink && (
+    <p class="disclosure">本記事にはアフィリエイト広告（プロモーション）を含みます。</p>
+  )
+}
+
+<style>
+  .disclosure {
+    margin: 0 0 2rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: #f6f7f5;
+    border-radius: 4px;
+  }
+</style>
